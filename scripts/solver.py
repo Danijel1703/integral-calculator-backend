@@ -1,71 +1,112 @@
+from operator import indexOf
+from tokenize import Number
+from turtle import down, right
 import numpy as np
+from sympy.utilities.lambdify import lambdify
+from sympy import sympify
 
-def trapz(f,a,b,N=50):
-    '''Approximate the integral of f(x) from a to b by the trapezoid rule.
 
-    The trapezoid rule approximates the integral \int_a^b f(x) dx by the sum:
-    (dx/2) \sum_{k=1}^N (f(x_k) + f(x_{k-1}))
-    where x_k = a + k*dx and dx = (b - a)/N.
-
-    Parameters
-    ----------
-    f : function
-        Vectorized function of a single variable
-    a , b : numbers
-        Interval of integration [a,b]
-    N : integer
-        Number of subintervals of [a,b]
-
-    Returns
-    -------
-    float
-        Approximation of the integral of f(x) from a to b using the
-        trapezoid rule with N subintervals of equal length.
-
-    Examples
-    --------
-    >>> trapz(np.sin,0,np.pi/2,1000)
-    0.9999997943832332
-    '''
-    x = np.linspace(a,b,N+1) # N+1 points make N subintervals
-    y = f(x)    
-    y_right = y[1:] # right endpoints
-    y_left = y[:-1] # left endpoints
-    dx = (b - a)/N
-    T = (dx/2) * np.sum(y_right + y_left)
-    return str(T)
-
-def simps(f,a,b,N=50):
-    '''Approximate the integral of f(x) from a to b by Simpson's rule.
-
-    Simpson's rule approximates the integral \int_a^b f(x) dx by the sum:
-    (dx/3) \sum_{k=1}^{N/2} (f(x_{2i-2} + 4f(x_{2i-1}) + f(x_{2i}))
-    where x_i = a + i*dx and dx = (b - a)/N.
-
-    Parameters
-    ----------
-    f : function
-        Vectorized function of a single variable
-    a , b : numbers
-        Interval of integration [a,b]
-    N : (even) integer
-        Number of subintervals of [a,b]
-
-    Returns
-    -------
-    float
-        Approximation of the integral of f(x) from a to b using
-        Simpson's rule with N subintervals of equal length.
-
-    Examples
-    --------
-    >>> simps(lambda x : 3*x**2,0,1,10)
-    1.0
-    '''
-    if N % 2 == 1:
-        raise ValueError("N must be an even integer.")
-    dx = (b-a)/N
-    x = np.linspace(a,b,N+1)
+def trapz_numpy(f, down_limit, upper_limit, n=50):
+    x = np.linspace(down_limit, upper_limit, n+1)
     y = f(x)
-    S = dx/3 * np.sum(y[0:-1:2] + 4*y[1::2] + y[2::2])
-    return str(S)
+    y_right_endpoint = y[1:]
+    y_left_endopint = y[:-1]
+    dx = (upper_limit - down_limit)/n
+    result = (dx/2) * np.sum(y_right_endpoint + y_left_endopint)
+    return str(result)
+
+
+def trapz(f, down_limit, upper_limit, n=50):
+    distance = upper_limit - down_limit
+    subinterval = down_limit
+    x = []
+    x.append(subinterval)
+    i = 0
+    while i < n:
+        subinterval = subinterval + distance/n
+        x.append(subinterval)
+        i += 1
+    y = []
+    for interval in x:
+        try:
+            if isinstance(f(round(interval)), float or int) or isinstance(f(round(interval)), int):
+                y.append(f(interval))
+        except:
+            error = {
+                'error': 'Funkcija nije definirana ili ima prekid u točki ' + str(int(interval)) + '.', 'isCommon': True}
+            return error
+
+    y_right_endpoint = y[1:]
+    y_left_endpoint = y[:-1]
+    right_endpoint_sum = 0
+    left_endpoint_sum = 0
+    for interval_result in y_right_endpoint:
+        right_endpoint_sum += interval_result
+    for interval_result in y_left_endpoint:
+        left_endpoint_sum += interval_result
+    endpoint_sum = right_endpoint_sum + left_endpoint_sum
+    dx = (upper_limit - down_limit)/n
+    result = (dx/2) * endpoint_sum
+    return str(result)
+
+
+def simps_numpy(f, down_limit, upper_limit, n=50):
+    if n % 2 == 1:
+        error = {
+            'error': 'Broj podintervala mora biti paran za računanje pomoću simpsonove metode.'}
+        return error
+    dx = (upper_limit-down_limit)/n
+    x = np.linspace(down_limit, upper_limit, n+1)
+    y = f(x)
+    result = dx/3 * np.sum(y[0:-1:2] + 4*y[1::2] + y[2::2])
+    return str(result)
+
+
+def simps(f, down_limit, upper_limit, n=50):
+    if n % 2 == 1:
+        error = {
+            'error': {
+                'isCommon': False,
+                'message': 'Broj podintervala mora biti paran za računanje po Simpsonovoj metodi.'
+            }
+        }
+        return error
+    x = []
+    distance = upper_limit - down_limit
+    subinterval = down_limit
+    x.append(subinterval)
+    i = 0
+    while i < n:
+        subinterval = subinterval + distance/n
+        x.append(subinterval)
+        i += 1
+    y = []
+    for interval in x:
+        try:
+            print(f(round(interval)))
+            if isinstance(f(round(interval)), float) or isinstance(f(round(interval)), int):
+                y.append(f(interval))
+        except:
+            error = {
+                'error': {
+                    'isCommon': True,
+                    'message': 'Funkcija nije definirana ili ima prekid u točki ' + str(int(interval)) + '.'
+                }
+            }
+            return error
+    dx = (upper_limit-down_limit)/n
+    y_first_endpoints = y[0:-1:2]
+    y_second_endpoints = y[1::2]
+    y_third_endpoints = y[2::2]
+    first_endpoints_sum = 0
+    second_endpoints_sum = 0
+    third_endpoints_sum = 0
+    for interval_result in y_first_endpoints:
+        first_endpoints_sum += interval_result
+    for interval_result in y_second_endpoints:
+        second_endpoints_sum += 4*interval_result
+    for interval_result in y_third_endpoints:
+        third_endpoints_sum += interval_result
+    endpoint_sum = first_endpoints_sum + second_endpoints_sum + third_endpoints_sum
+    result = dx/3 * endpoint_sum
+    return str(result)

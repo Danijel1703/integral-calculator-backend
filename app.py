@@ -1,4 +1,5 @@
-from scripts.solver import trapz, simps
+from distutils.log import error
+from scripts.solver import trapz, simps, trapz_numpy, simps_numpy
 from sympy import sympify
 from sympy.utilities.lambdify import lambdify
 from latex2sympy2 import latex2sympy
@@ -18,12 +19,12 @@ def hello_world():
 def solve_trapez():
     data = request.get_json()
     equation = latex2sympy(data['equation'])
-    upperLimit = int(data['upperLimit'])
-    downLimit = int(data['downLimit'])
-    accuracy = int(data['accuracy'])
+    upper_limit = int(data['upperLimit'])
+    down_limit = int(data['downLimit'])
+    subintervals = int(data['subintervals'])
     integrate_by = sympify('x')
     f = lambdify(integrate_by, equation)
-    result = trapz(f, downLimit, upperLimit, accuracy)
+    result = trapz(f, down_limit, upper_limit, subintervals)
     return result
 
 
@@ -31,12 +32,12 @@ def solve_trapez():
 def solve_simps():
     data = request.get_json()
     equation = latex2sympy(data['equation'])
-    upperLimit = int(data['upperLimit'])
-    downLimit = int(data['downLimit'])
-    accuracy = int(data['accuracy'])
+    upper_limit = int(data['upperLimit'])
+    down_limit = int(data['downLimit'])
+    subintervals = int(data['subintervals'])
     integrate_by = sympify('x')
     f = lambdify(integrate_by, equation)
-    result = simps(f, downLimit, upperLimit, accuracy)
+    result = simps(f, down_limit, upper_limit, subintervals)
     return result
 
 
@@ -44,14 +45,19 @@ def solve_simps():
 def solve_with_all():
     data = request.get_json()
     equation = latex2sympy(data['equation'])
-    upperLimit = int(data['upperLimit'])
-    downLimit = int(data['downLimit'])
-    accuracy = int(data['accuracy'])
+    upper_limit = int(data['upperLimit'])
+    down_limit = int(data['downLimit'])
+    subintervals = int(data['subintervals'])
     integrate_by = sympify('x')
     f = lambdify(integrate_by, equation)
-    result_simps = simps(f, downLimit, upperLimit, accuracy)
-    result_trapz = trapz(f, downLimit, upperLimit, accuracy)
-    result = {'simpsons': result_simps, 'trapez': result_trapz}
+    result_simps = simps(f, down_limit, upper_limit, subintervals)
+    result_trapz = trapz(f, down_limit, upper_limit, subintervals)
+    result_simps_numpy = simps_numpy(
+        f, down_limit, upper_limit, subintervals)
+    result_trapz_numpy = trapz_numpy(
+        f, down_limit, upper_limit, subintervals)
+    result = {'simpsons': result_simps, 'trapez': result_trapz,
+              'simpsons_numpy': result_simps_numpy, 'trapz_numpy': result_trapz_numpy}
     return result
 
 
@@ -60,12 +66,10 @@ def convert_expression():
     data = request.get_json()
     try:
         equation = LatexNodes2Text().latex_to_text(data['equation'])
-        is_valid = latex2sympy(data['equation'])
-        if is_valid:
-            return equation
+        return equation
     except:
-        result = {'error': 'Greška pri unosu'}
-        return result
+        error = {'error': 'Pogreška pri unosu funkcije, molim vas unesite ponovno.'}
+        return error
 
 
 if __name__ == '__main__':
