@@ -1,6 +1,3 @@
-from operator import indexOf
-from tokenize import Number
-from turtle import down, right
 import numpy as np
 from sympy.utilities.lambdify import lambdify
 from sympy import sympify

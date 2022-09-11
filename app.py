@@ -1,4 +1,3 @@
-from distutils.log import error
 from scripts.solver import trapz, simps, trapz_numpy, simps_numpy
 from sympy import sympify
 from sympy.utilities.lambdify import lambdify
